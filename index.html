@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport">
+	<title>Snake</title>
+	<style>
+		canvas{
+			margin: auto;
+			display: block;
+			border:10px solid;
+			background-color: lightgray;
+		}
+		.button{
+			width: 133px;
+			height:42px;
+			border:0px solid;
+			background-color: lightgray;
+			transition-duration: 0.4s;
+			font-size: 30px;
+		}
+		.button:hover{
+			color: red
+		}
+		td{
+			width: 133px;
+			background-color: lightgray;
+			border:2px solid;
+			font-family: "arial", sans-serif;
+			font-size: 10px;
+			text-align:center;
+		}
+		.fondPage{
+			background-color:gray;
+			margin: auto;
+			height: 570px;
+			width: 600px;
+			border:2px solid;
+		}
+		.titre{
+			font-family: "arial", sans-serif;
+			border:2px solid;
+			background-color: lightgray;
+			width: 200px;
+		}
+	</style>
+</head>
+
+<body>
+	<div align="center" class="fondPage">
+		<h1 class="titre"><font color="green">SNAK</font><font color="red">E</font></h1>
+		<canvas width="400" height ="400"></canvas>
+		<table>
+			<tr>
+				<td><h2 id="score">Score : 0 </h2></td>
+				<td><input type="button" value="Reset" class="button" onclick="reset()"></td>
+				<td><h2 id="highscore"> Highcore : 0</h2></td>
+			</tr>
+		<table>
+	</div>
+	
+	<script>
+		const canvas = document.querySelector("canvas");
+		const context = canvas.getContext('2d');
+		//défini une case du terrain
+		let box = 20;
+		
+		//crée une liste qui représente le serpent 
+		let snake = [];
+		snake[0] = {x: 10*box, y: 10*box};
+		
+		//génère aléatoirement de la nourriture sur le terrain
+		let food = {
+			x: Math.floor(Math.random() * 19 + 1)*box,
+			y: Math.floor(Math.random() * 19 + 1)*box
+		};
+		
+		let score=0;
+		let highscore = 0;
+		let d;
+		let canChangeDirection = true;
+		
+		document.addEventListener("keydown", direction);
+		
+		
+		function direction(event){ //détecte si une touche a été pressé
+			if(!canChangeDirection) return;
+			canChangeDirection = false;
+			
+			let key = event.keyCode;
+			if(key == 37 && d != "RIGHT"){
+				d = "LEFT";
+			}
+			else if(key == 38 && d!= "DOWN"){
+				d = "UP";
+			}
+			else if(key == 39 && d!= "LEFT"){
+				d = "RIGHT";
+			}
+			else if(key == 40 && d!= "UP"){
+				d = "DOWN";
+			}
+			//impose un delais avant de pouvoir appuyer sur une touche à nouveau
+			setTimeout(() => {canChangeDirection = true;}, 100);
+		}
+		
+		function draw(){ //l'affichage entier du jeu
+			context.clearRect(0,0,400,400);
+
+			//dessine le serpent
+			for(let i=0; i<snake.length; i++){
+				context.fillStyle = (i==0) ? "green" : "lime";
+				context.fillRect(snake[i].x, snake[i].y, box, box);
+				context.strokeStyle = "green";
+				context.strokeRect(snake[i].x, snake[i].y, box, box);
+			}
+			//dessine la nourriture
+			context.fillStyle = "red";
+			context.fillRect(food.x, food.y, box, box);
+			
+			let snakeX = snake[0].x;
+			let snakeY = snake[0].y;
+			
+			if(d == "LEFT") snakeX -= box;
+			if(d == "UP") snakeY -= box;
+			if(d == "RIGHT") snakeX += box;
+			if(d == "DOWN") snakeY += box;
+			
+			// vérifie si le serpent est sur de la nourriture
+			if(snakeX ==food.x && snakeY == food.y){
+				//si oui, il rajoute 1 au score
+				score++;
+				document.getElementById("score").textContent = "Score : " + score;
+				if(score > highscore){
+					//augmente de 1 le highscore si il est dépassé 
+					highscore++;
+					document.getElementById("highscore").textContent = "Highscore : " +score;
+				}
+				//génère une nouvelle nourriture
+				food ={
+					x: Math.floor(Math.random() * 19 + 1)*box,
+					y: Math.floor(Math.random() * 19 + 1)*box
+				};
+			}
+			else{
+				snake.pop();
+			}
+		
+			let newHead = {
+				x: snakeX,
+				y: snakeY
+			};
+			
+			//vérifie si le serpent est entré en collision avec un mur ou lui même
+			if(snakeX < 0 || snakeY < 0 || snakeX > 19*box || snakeY > 19*box ||
+				collision(newHead, snake)){
+				
+				clearInterval(game);
+				alert("Perdu !");
+			}
+			//vérifie si le joueur à atteint le score maximum et dit qu'il à gagné
+			if(score==box*box){
+				clearInterval(game);
+				alert("Gagné !");
+			}
+			
+			snake.unshift(newHead);
+				
+		}
+		
+		function collision(head, array){ //vérifie si le serpent s'est rentré dedans 
+			for(let g = 0; g < array.length; g++){
+				if(head.x == array[g].x && head.y == array[g].y){
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		let game = setInterval(draw, 100);
+		
+		function reset(){ //relance une partie quand on clique dessu, sans effacer le highscore
+			clearInterval(game);
+			score=0;
+			document.getElementById("score").textContent = "Score : 0";
+			snake=[];
+			snake[0] = {x: 10*box, y: 10*box};
+			food = {
+				x: Math.floor(Math.random() * 19 + 1)*box,
+				y: Math.floor(Math.random() * 19 + 1)*box
+			};
+			d=undefined;
+			game = setInterval(draw, 100);
+		}
+	</script>
+</body>
+</html>
